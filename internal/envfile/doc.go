@@ -1,28 +1,36 @@
-// Package envfile provides utilities for working with .env files in the
-// envcrypt tool.
+// Package envfile provides utilities for reading, writing, encrypting,
+// decrypting, diffing, merging, auditing, and validating .env files.
 //
-// # Parsing and Writing
+// # File Format
 //
-// Parse reads a .env file from disk into an ordered slice of key-value pairs,
-// preserving blank lines and comments. Write serialises that slice back to
-// disk in a deterministic, human-readable format.
+// Each non-blank, non-comment line must follow the pattern:
 //
-// # Encryption and Decryption
+//	KEY=VALUE
 //
-// EncryptValues encrypts every value in an env-file map using the AES-GCM
-// primitives from internal/crypto, base64-encoding each ciphertext so the
-// result remains a valid .env file. DecryptValues reverses the process.
+// Lines beginning with '#' are treated as comments and are preserved
+// during round-trip writes where possible.
 //
-// # Diffing
+// # Validation
 //
-// Diff compares two env-file maps and returns a structured summary of which
-// keys were added, removed, or changed between them — useful for auditing
-// changes before committing an encrypted file.
+// Use [Validate] or [ValidateFile] to check a set of entries for common
+// problems such as empty keys, keys that do not conform to the POSIX
+// identifier convention ([A-Za-z_][A-Za-z0-9_]*), and duplicate keys.
+// [ValidateKey] can be used to check a single key string.
 //
-// # Audit Logging
+// # Encryption
 //
-// Record, LoadAuditLog, and AuditLog provide a lightweight append-only JSON
-// audit trail. Every encrypt, decrypt, and rotate operation performed by the
-// CLI appends an AuditEvent (timestamp, environment, operation, affected keys)
-// to a local audit.json file so operators can review what changed and when.
+// [EncryptValues] and [DecryptValues] operate on []Entry slices, leaving
+// keys in plain text while encrypting or decrypting values using AES-GCM
+// via the internal/crypto package.
+//
+// # Diff & Merge
+//
+// [Diff] compares two []Entry slices and returns a [DiffResult] describing
+// added, removed, and changed keys. [Merge] combines a base and overlay
+// slice with configurable conflict strategies.
+//
+// # Audit
+//
+// [LoadAuditLog] and [Record] provide an append-only JSONL audit trail for
+// tracking encryption and rotation events.
 package envfile
